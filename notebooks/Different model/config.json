@@ -1,0 +1,94 @@
+{ 
+	"array":[
+		{
+			"N": 1000,
+			"type": "continue",
+			"alpha": ["a","b","c"],
+			"n_comp": 3,
+			"params":{
+					"a": {"len": [40, 55], "depend_on": "False"},
+					"b": {"len": [20,35], "depend_on": "False"},
+					"c": {"len": [20, 45], "depend_on": "False"},
+					"d": {"len": [25, 25], "depend_on": "False"},
+					"e": {"len": [45, 45], "depend_on": "False"}	 
+				      },
+			 "mean" : [2,  4 , 6 ],
+			 "variance" : [0.2, 0.2, 0.2 ],
+			 "sorted" : true,
+			"dir": "Exp_discret_two_stage"
+		},
+		{
+			"N": 1000,
+			"type": "continue",
+			"alpha": ["a","b","c","d"],
+			"n_comp": 4,
+			"params":{
+					"a": {"len": [45, 45], "depend_on": "False"},
+					"b": {"len": [25,25], "depend_on": "False"},
+					"c": {"len": [40,40], "depend_on": "False"},
+					"d": {"len": [25, 25], "depend_on": "False"},
+					"e": {"len": [45, 45], "depend_on": "False"}	 
+				      },
+			"mean" : [1, 10 , 3, 7],
+			"variance" : [0.3, 0.15, 0.2, 0.1 ],
+			"sorted" : true,
+			"dir": "Exp_discret_two_stage"
+
+		},
+		{
+			"N": 1000,
+			"type": "continue",
+			"alpha": ["a","b","c","d","e"],
+			"n_comp": 5,
+			"params":{
+					"a": {"len": [45, 45], "depend_on": "False"},
+					"b": {"len": [25,25], "depend_on": "False"},
+					"c": {"len": [40,40], "depend_on": "False"},
+					"d": {"len": [25, 25], "depend_on": "False"},
+					"e": {"len": [45, 45], "depend_on": "False"}
+				      },
+			"mean" : [1, 10 , 3, 7, 12],
+			"variance" : [0.3, 0.15, 0.2, 0.1, 0.14, 0.5],
+			"sorted" : true,
+			"dir": "Exp_discret_two_stage"
+
+		},
+		{
+			"N": 1000,
+			"type": "continue",
+			"alpha": ["a","c","b","d"],
+			"n_comp": 4,
+			"params":{
+					"a": {"len": [45, 45], "depend_on": "False"},
+					"b": {"len": [25,25], "depend_on": "False"},
+					"c": {"len": [40,40], "depend_on": "False"},
+					"d": {"len": [25, 25], "depend_on": "False"},
+					"e": {"len": [45, 45], "depend_on": "False"}
+				      },
+			"mean" : [1, 10 , 3, 7 ],
+			"variance" : [0.3, 0.15, 0.2, 0.1],
+			"sorted" : false,
+			"dir": "Exp_discret_two_stage"
+
+		},
+		{
+			"N": 1000,
+			"type": "continue",
+			"alpha": ["a","c","b","d"],
+			"n_comp": 4,
+			"params":{
+					"a": {"len": [45, 45], "depend_on": "False"},
+					"b": {"len": [25,25], "depend_on": "False"},
+					"c": {"len": [40,40], "depend_on": "randomly"},
+					"d": {"len": [25, 25], "depend_on": "False"},
+					"e": {"len": [45, 45], "depend_on": "False"}
+				      },
+			"mean" : [1, 10 , 3, 7],
+			"variance" : [0.3, 0.15, 0.2, 0.1],
+			"sorted" : true,
+			"dir": "Exp_discret_two_stage"
+
+		}
+		]
+}
+

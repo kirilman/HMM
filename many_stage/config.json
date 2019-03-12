@@ -1,0 +1,51 @@
+{ 
+	"array":[
+		{
+			"N": 1000,
+			"type": "test_discret",
+			"alpha": ["a","b","c","d"],
+			"n_comp": 4,
+			"norm_params":{
+					"a": {"len": [5, 5], "depend_on": "False"},
+					"b": {"len": [50, 50], "depend_on": "False"},
+					"c": {"len": [15, 15], "depend_on": "False"},
+					"d": {"len": [25, 25], "depend_on": "False"}	 
+				      },
+			 "mean" = [1, 10 , 3, 7],
+			 "variance" = [0.3, 0.15, 0.2, 0.1, 0.14]
+			"dir": "Exp_discret_two_stage"
+		},
+		{
+			"N": 1000,
+			"type": "test_discret",
+			"alpha": ["a","b","c","d"],
+			"n_comp": 4,
+			"norm_params":{
+					"a": {"len": [5, 5], "depend_on": "False"},
+					"b": {"len": [50,50], "depend_on": "False"},
+					"c": {"len": [100, 100], "depend_on": "False"},
+					"d": {"len": [50, 50], "depend_on": "False"}	 
+				      },
+			"mean" = [1, 10 , 3, 7],
+			"variance" = [0.3, 0.15, 0.2, 0.1, 0.14],
+			"dir": "Exp_discret_two_stage"
+
+		},
+		{
+			"N": 1000,
+			"type": "test_discret",
+			"alpha": ["a","b","c","d"],
+			"n_comp": 4,
+			"norm_params":{
+					"a": {"len": [45, 45], "depend_on": "False"},
+					"b": {"len": [150,150], "depend_on": "False"},
+					"c": {"len": [10,10], "depend_on": "False"},
+					"d": {"len": [5, 5], "depend_on": "False"}	 
+				      },
+			"mean" = [1, 10 , 3, 7],
+			"variance" = [0.3, 0.15, 0.2, 0.1, 0.14],
+			"dir": "Exp_discret_two_stage"
+
+		}
+		]
+}
