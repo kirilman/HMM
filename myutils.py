@@ -164,4 +164,12 @@ def print_trans_matrix(model):
     trans = model.dense_transition_matrix()
     print(trans) 
 
-
+def plot_signal_label( signal,label):
+    if isinstance(signal,np.ndarray):
+        signal = signal.reshape(-1,1)
+    if isinstance(label,np.ndarray):
+        label = label.reshape(-1,1)
+    fig = plt.figure(figsize=(15,5),dpi=120)
+    plt.plot(signal)
+    plt.plot(label,'green')
+    return fig

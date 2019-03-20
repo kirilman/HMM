@@ -6,14 +6,14 @@
 			"alpha": ["a","b","c"],
 			"n_comp": 3,
 			"params":{
-					"a": {"len": [40, 55], "depend_on": "False"},
-					"b": {"len": [20,35], "depend_on": "False"},
-					"c": {"len": [20, 45], "depend_on": "False"},
+					"a": {"len": [5, 15], "depend_on": "False"},
+					"b": {"len": [15, 25], "depend_on": "False"},
+					"c": {"len": [10, 15], "depend_on": "False"},
 					"d": {"len": [25, 25], "depend_on": "False"},
 					"e": {"len": [45, 45], "depend_on": "False"}	 
 				      },
 			 "mean" : [2,  4 , 6 ],
-			 "variance" : [0.2, 0.2, 0.2 ],
+			 "variance" : [0.2, 0.01, 0.5 ],
 			 "sorted" : true,
 			"dir": "Exp_discret_two_stage"
 		},
@@ -77,9 +77,9 @@
 			"alpha": ["a","c","b","d"],
 			"n_comp": 4,
 			"params":{
-					"a": {"len": [45, 45], "depend_on": "False"},
-					"b": {"len": [25,25], "depend_on": "False"},
-					"c": {"len": [40,40], "depend_on": "randomly"},
+					"a": {"len": [10, 15], "depend_on": "False"},
+					"b": {"len": [100,100], "depend_on": "False"},
+					"c": {"len": [50, 50], "depend_on": "randomly"},
 					"d": {"len": [25, 25], "depend_on": "False"},
 					"e": {"len": [45, 45], "depend_on": "False"}
 				      },
@@ -88,6 +88,23 @@
 			"sorted" : true,
 			"dir": "Exp_discret_two_stage"
 
+		},
+		{
+			"N": 1000,
+			"type": "continue",
+			"alpha": ["a","b","c"],
+			"n_comp": 3,
+			"params":{
+					"a": {"len": [5, 15], "depend_on": "False"},
+					"b": {"len": [55, 65], "depend_on": "False"},
+					"c": {"len": [10, 15], "depend_on": "False"},
+					"d": {"len": [25, 25], "depend_on": "False"},
+					"e": {"len": [45, 45], "depend_on": "False"}	 
+				      },
+			 "mean" : [2,  4 , 6 ],
+			 "variance" : [0.2, 0.01, 0.5 ],
+			 "sorted" : true,
+			"dir": "Exp_discret_two_stage"
 		}
 		]
 }
