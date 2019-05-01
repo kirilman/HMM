@@ -1,2 +1,7 @@
 A novel methodology based on hidden semi-Markov.pdf
 
+/**/*.pdf
+/**/*.jpeg
+/**/*.docx
+/**/*.txt
+/**/*.png

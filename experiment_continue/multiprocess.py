@@ -1,6 +1,6 @@
 import sys
 import os
-sys.path.append('/home/kirilman/Projects/nir/nir/')
+sys.path.append('/home/kirilman/Projects/nir/main nir/')
 sys.path.append('/home/kirill/Projects/nir')
 
 

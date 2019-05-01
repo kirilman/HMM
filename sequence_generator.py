@@ -1,6 +1,8 @@
 import numpy as np
 import random
 from myutils import rename_state
+from pyhsmm.util.general import rle
+
 def gaussian_generator(mean, deviation, sample_size):
     data = np.array([np.random.normal(mean,deviation) for x in range(sample_size)])
     return data
@@ -9,9 +11,9 @@ STAGE_DICT = {chr(x): x - 97 for x in range(97,123)}
 
 class Sequence:
     def __init__(self, n, alphabet = [], period = 0, type = None, p = None, params = None, mean = None , variance = None,
-                 is_sorted = True):
+                 is_sorted = True, hsmm_model = None):
         self.n = n
-        self.path = None
+        self.stateseq = None
         self.period = period
 
         if is_sorted == True:
@@ -36,10 +38,12 @@ class Sequence:
             self.test_discrete(params)
         if type == 'continue':
             self.continue_signal(mean,variance, params)
+        if type == 'model':
+            self.initialization_from_model(hsmm_model)
 
     def continue_signal(self, mean, variance, params):
         self.test_discrete(params)
-        self.sequence = [ np.random.normal(mean[i],variance[i]) for i in self.path]
+        self.sequence = [ np.random.normal(mean[i],variance[i]) for i in self.stateseq]
 
     def random(self,p):
         h = np.zeros((len(p) + 1, 2))
@@ -132,7 +136,7 @@ class Sequence:
         #                 for _ in range(r):
         #                     self.sequence.append(s)
         
-        self.path = [ STAGE_DICT[s] for s in self.sequence]
+        self.stateseq = [ STAGE_DICT[s] for s in self.sequence]
         self.n = len(self.sequence)
 
     def periodic(self):
@@ -145,7 +149,7 @@ class Sequence:
                 for k in range(rest):
                     self.sequence += self.alphabet[k]
 
-    def get_slice(self):
+    def get_slice(self,_sequence=None):
         """
         Получить случайно выбранную подпоследовательность из одного и того же символа с
         Returns:
@@ -153,9 +157,12 @@ class Sequence:
         stop : индекс окончания
         с : символ       
         """
-        m = np.random.choice(range(len(self.sequence)))
+        if _sequence == None:
+            m = np.random.choice(range(len(self.sequence)))
+        else:
+            m = np.random.choice(range(100,len(_sequence ) - 100))
         # m = len(s) - 1
-        c = self.path[m]
+        c = self.stateseq[m]
         start, stop = 0, 0
         i = 1 
         flag_1 = True
@@ -167,15 +174,15 @@ class Sequence:
                     start = m-i+1
                     flag_1 = False
                 else:
-                    if self.path[m - i]!=c:
+                    if self.stateseq[m - i]!=c:
                         start = m-i+1
                         flag_1 = False
             if flag_2 == True:
-                if m + i - 1 >= len(self.path) - 1:
+                if m + i - 1 >= len(self.stateseq) - 1:
                     stop = m + i
                     flag_2 = False
                 else:
-                    if self.path[m+i]!=c:
+                    if self.stateseq[m+i]!=c:
                         stop = m + i
                         flag_2 = False
             i+=1
@@ -184,9 +191,24 @@ class Sequence:
         # print('f',m,start,stop)
         return start, stop, c   
 
-    def get_abnormal_signal(self, count = 1):
+    def get_abnormal(self, dtype = 'extension', extension_coef = 3, count_insert = 1, varience_coef = 2 , state = 0,
+                     state_update = 1, count_segment = 1):
+        """
+        dtype : {extension, insert, varience, chain_violation}
+        """
+        if dtype == 'extension':
+            return self._abnormal_extend_condition(extension_coef)
+        elif dtype == 'insert':
+            return self._get_abnormal_signal(count_insert)
+        elif dtype == 'varience':
+            return self._abnormal_increase_varience(state,varience_coef)
+        elif dtype == 'chain_violation':
+            return self._abnormal_chain_violation(state, state_update, count_segment)
+
+    # Аномальная вставка 
+    def _get_abnormal_signal(self, count = 1):
         x = self.sequence.copy()
-        for i in range(count):
+        for _ in range(count):
             start, stop, c = self.get_slice()
             c-=1
             # print(c)
@@ -196,15 +218,58 @@ class Sequence:
             # print(start,stop)
             # print(len(x))
         return x
-        
 
-    def anormal(self,p):
-        x = self.sequence.copy()
-        n = round(self.n*p)
-        for i in range(n):
-            index = round(np.random.uniform(0,self.n-1))
-            x[index] = self.get_random_simbol()
+    # Нарушение цепи маркова
+    def _abnormal_chain_violation(self, state, state_update, count_segment):
+        """
+            count_segemnt:int - количество сегментов одного состояния для замены
+        """
+        x = np.array(self.sequence)
+        states, pos = rle(self.stateseq)
+        positions = np.cumsum(pos)
+        index = np.where(np.array(states) == state)[0][-count_segment:]
+        for it, ind in enumerate(index):
+            if it == 0:
+                indexs = np.arange(positions[ind - 1], positions[ind])
+            else:
+                indexs = np.concatenate((indexs,np.arange(positions[ind - 1], positions[ind])))
+
+        x[indexs] = np.random.normal(self.mean[state_update], self.variance[state_update],
+                                   len(indexs))
         return x
+        
+    def _abnormal_increase_varience(self, states, coef):
+        assert len(states) < len(self.mean)
+        x = np.array(self.sequence)
+        for state in states:
+            indx = np.where(np.array(self.stateseq) == state)[0]
+            x[indx] = np.random.normal(self.mean[state], self.variance[state]*coef, len(indx))
+        return x
+
+    # Увеличение продолжительности состояния
+    def _abnormal_extend_condition(self, coef ):
+        """
+            Возвращает сигнал, у которого увеличина продолжительность одного состояния
+            в coef раз.
+        """
+        start, stop, c = self.get_slice(self.sequence)
+        x = self.sequence.copy()
+        size = int(np.mean(self.params[ self.alphabet[c] ]['len']) * coef)
+        x[start:start+size] = np.random.normal(self.mean[c], self.variance[c], size)
+        x[start+size:] = self.sequence[stop:]
+        x = np.array(x[:self.n])
+        if x.shape[0]>self.n:
+            print('Проверить длину массива')
+        else:
+            return x
+
+    # def anormal(self,p):
+    #     x = self.sequence.copy()
+    #     n = round(self.n*p)
+    #     for i in range(n):
+    #         index = round(np.random.uniform(0,self.n-1))
+    #         x[index] = self.get_random_simbol()
+    #     return x
 
     def to_int(self):
         seq = self.sequence.copy()
@@ -263,6 +328,69 @@ class Sequence:
             seq_stages += [current_stage]
         return list(data), seq_stages
 
+    def initialization_from_model(self, hsmm_model=None):
+        """
+            Инициализировать параметры распределения сигнала из модели.
+            T : int - длина сигнала
+        """
+        assert len(hsmm_model.obs_distns[0].sigma[0]) <= 1
+        mean = []
+        sigma = []
+        signal, stateseq = hsmm_model.generate(self.n)
+        for i in range(len(hsmm_model.obs_distns)):
+            mean+=[hsmm_model.obs_distns[i].mu[0]]
+            sigma+=[np.sqrt(hsmm_model.obs_distns[i].sigma[0])]
+        self.mean = mean
+        self.variance = sigma
+        self.sequence = signal
+        self.stateseq = stateseq
+
+
+class SemiMarkovSignal():
+    def __init__(self, _init_dist = None, _trans_matrix = None, _means = None, _varience = None , _N = None, T = None, _dur_param = None):
+        self.init_dist = np.array(_init_dist)
+        self.trans_matrix = _trans_matrix
+        self.means = _means
+        self.dur_param = _dur_param
+        self.varience = _varience
+        self.count_states = _N
+        self.sequence = np.zeros((T))
+        self.stateseq = np.zeros((T))
+        #Start 
+        int_cumsum = np.cumsum(self.init_dist)
+        cur_len = 0
+        while cur_len < T:
+            if cur_len == 0:
+                cur_state = self._get_state(int_cumsum)
+                dur = np.random.poisson(self.dur_param[cur_state])
+                self.sequence[cur_len:cur_len+dur] = np.random.normal(self.means[cur_state], self.varience[cur_state], size = dur)
+                self.stateseq[cur_len:cur_len+dur] = cur_state
+                cur_len +=dur
+            else:
+                trans_cumsum = np.concatenate((np.array([0]),self.trans_matrix[cur_state])).cumsum()
+                # print(trans_cumsum)
+                cur_state = self._get_state(trans_cumsum)
+                # print(cur_state)
+                dur = np.random.poisson(self.dur_param[cur_state])
+                if dur > T - cur_len:
+                    self.sequence[cur_len:cur_len+dur] = np.random.normal(self.means[cur_state], self.varience[cur_state], size = T - cur_len)
+                else:
+                    self.sequence[cur_len:cur_len+dur] = np.random.normal(self.means[cur_state], self.varience[cur_state], size = dur)
+                self.stateseq[cur_len:cur_len+dur] = cur_state
+                cur_len +=dur
+
+
+
+    def _get_state(self,pi):
+        rnd = np.random.random()
+        # print(rnd)
+        for i in range(len(pi)-1):
+            if (rnd > pi[i]) and (rnd <= pi[i+1]):
+                return i
+        return i
+        # for i in range(T-1):
+
+
 class Signal(Sequence):
     def __init__(self, n, count_stage, mean, varience, t ):
         super().__init__(n)
@@ -271,30 +399,29 @@ class Signal(Sequence):
         self.mean = mean
         self.varience = varience
         self.t = t
-        self.sequence, self.path = self.create_signal()
-
+        self.sequence, self.stateseq = self.create_signal()
     def create_signal (self):
         l = 0
         sequence = []
-        path = []
+        stateseq = []
         current_stage = 0
         while(True):
             n = int(np.random.uniform(self.t[0], self.t[1]))
             l += n
             if l < self.n:
-                path = path + [current_stage]*n
+                stateseq = stateseq + [current_stage]*n
                 sequence = sequence + np.random.normal(self.mean[current_stage], self.varience[current_stage], n).tolist()
                 if current_stage < self.count_stage - 1:
                     current_stage+=1
                 else:
                     current_stage=0
             else:
-                n = self.n - len(path)
-                path = path + [current_stage] * n
+                n = self.n - len(stateseq)
+                stateseq = stateseq + [current_stage] * n
                 sequence = sequence + np.random.normal(self.mean[current_stage], self.varience[current_stage],
                                                        n).tolist()
                 break
-        return sequence, path
+        return sequence, stateseq
 
 class Continue_Signal():
     def __init__(self, _n, _mean, _varience):

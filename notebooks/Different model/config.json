@@ -105,6 +105,24 @@
 			 "variance" : [0.2, 0.01, 0.5 ],
 			 "sorted" : true,
 			"dir": "Exp_discret_two_stage"
+		},
+				{
+			"N": 1000,
+			"type": "continue",
+			"alpha": ["a","c","b","d"],
+			"n_comp": 4,
+			"params":{
+					"a": {"len": [10, 15], "depend_on": "False"},
+					"b": {"len": [40, 50], "depend_on": "False"},
+					"c": {"len": [50, 50], "depend_on": "randomly"},
+					"d": {"len": [25, 25], "depend_on": "False"},
+					"e": {"len": [45, 45], "depend_on": "False"}
+				      },
+			"mean" : [1, 10 , 3, 7],
+			"variance" : [0.3, 0.15, 0.2, 0.1],
+			"sorted" : true,
+			"dir": "Exp_discret_two_stage"
+
 		}
 		]
 }
