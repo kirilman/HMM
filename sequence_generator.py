@@ -157,10 +157,13 @@ class Sequence:
         stop : индекс окончания
         с : символ       
         """
-        if _sequence == None:
+        if isinstance(_sequence, np.ndarray):
             m = np.random.choice(range(len(self.sequence)))
         else:
-            m = np.random.choice(range(100,len(_sequence ) - 100))
+            if _sequence == None:
+                m = np.random.choice(range(len(self.sequence)))
+            else:
+                m = np.random.choice(range(100,len(_sequence ) - 100))
         # m = len(s) - 1
         c = self.stateseq[m]
         start, stop = 0, 0
@@ -346,24 +349,25 @@ class Sequence:
         self.stateseq = stateseq
 
 
-class SemiMarkovSignal():
-    def __init__(self, _init_dist = None, _trans_matrix = None, _means = None, _varience = None , _N = None, T = None, _dur_param = None):
+class SemiMarkovSignal(Sequence):
+    def __init__(self, _init_dist = None, _trans_matrix = None, _means = None, _variance = None , _N = None, _T = None, _dur_param = None):
         self.init_dist = np.array(_init_dist)
         self.trans_matrix = _trans_matrix
-        self.means = _means
+        self.mean = _means
         self.dur_param = _dur_param
-        self.varience = _varience
+        self.variance = _variance
         self.count_states = _N
-        self.sequence = np.zeros((T))
-        self.stateseq = np.zeros((T))
-        #Start 
-        int_cumsum = np.cumsum(self.init_dist)
+        self.T = _T
+        self.sequence = np.zeros((self.T))
+        self.stateseq = np.zeros((self.T))
+        #Start
+        int_cumsum = np.concatenate((np.array([0]), self.init_dist)).cumsum()
         cur_len = 0
-        while cur_len < T:
+        while cur_len < self.T:
             if cur_len == 0:
                 cur_state = self._get_state(int_cumsum)
                 dur = np.random.poisson(self.dur_param[cur_state])
-                self.sequence[cur_len:cur_len+dur] = np.random.normal(self.means[cur_state], self.varience[cur_state], size = dur)
+                self.sequence[cur_len:cur_len+dur] = np.random.normal(self.mean[cur_state], self.variance[cur_state], size = dur)
                 self.stateseq[cur_len:cur_len+dur] = cur_state
                 cur_len +=dur
             else:
@@ -372,13 +376,37 @@ class SemiMarkovSignal():
                 cur_state = self._get_state(trans_cumsum)
                 # print(cur_state)
                 dur = np.random.poisson(self.dur_param[cur_state])
-                if dur > T - cur_len:
-                    self.sequence[cur_len:cur_len+dur] = np.random.normal(self.means[cur_state], self.varience[cur_state], size = T - cur_len)
+                if dur > self.T - cur_len:
+                    self.sequence[cur_len:cur_len+dur] = np.random.normal(self.mean[cur_state], self.variance[cur_state], size =self.T - cur_len)
                 else:
-                    self.sequence[cur_len:cur_len+dur] = np.random.normal(self.means[cur_state], self.varience[cur_state], size = dur)
+                    self.sequence[cur_len:cur_len+dur] = np.random.normal(self.mean[cur_state], self.variance[cur_state], size = dur)
                 self.stateseq[cur_len:cur_len+dur] = cur_state
                 cur_len +=dur
 
+    def generate_signal(self):
+        #Start
+        int_cumsum = np.concatenate((np.array([0]), self.init_dist)).cumsum()
+        cur_len = 0
+        while cur_len < self.T:
+            if cur_len == 0:
+                cur_state = self._get_state(int_cumsum)
+                dur = np.random.poisson(self.dur_param[cur_state])
+                self.sequence[cur_len:cur_len+dur] = np.random.normal(self.mean[cur_state], self.variance[cur_state], size = dur)
+                self.stateseq[cur_len:cur_len+dur] = cur_state
+                cur_len +=dur
+            else:
+                trans_cumsum = np.concatenate((np.array([0]),self.trans_matrix[cur_state])).cumsum()
+                # print(trans_cumsum)
+                cur_state = self._get_state(trans_cumsum)
+                # print(cur_state)
+                dur = np.random.poisson(self.dur_param[cur_state])
+                if dur > self.T - cur_len:
+                    self.sequence[cur_len:cur_len+dur] = np.random.normal(self.mean[cur_state], self.variance[cur_state], size =self.T - cur_len)
+                else:
+                    self.sequence[cur_len:cur_len+dur] = np.random.normal(self.mean[cur_state], self.variance[cur_state], size = dur)
+                self.stateseq[cur_len:cur_len+dur] = cur_state
+                cur_len +=dur
+        return self.sequence
 
 
     def _get_state(self,pi):
@@ -388,7 +416,86 @@ class SemiMarkovSignal():
             if (rnd > pi[i]) and (rnd <= pi[i+1]):
                 return i
         return i
-        # for i in range(T-1):
+
+    def get_abnormal(self, dtype='extension', extension_coef=3, count_insert=1, varience_coef=2, state=0,
+                     state_update=1, count_segment=1):
+        """
+        dtype : {extension, insert, varience, chain_violation}
+        """
+        if dtype == 'extension':
+            return self._abnormal_extend_condition(extension_coef)
+        elif dtype == 'insert':
+            return self._get_abnormal_signal(count_insert)
+        elif dtype == 'varience':
+            return self._abnormal_increase_varience(state, varience_coef)
+        elif dtype == 'chain_violation':
+            return self._abnormal_chain_violation(state, state_update, count_segment)
+
+    # Аномальная вставка
+    def _get_abnormal_signal(self, count=1):
+        x = self.sequence.copy()
+        for _ in range(count):
+            start, stop, c = self.get_slice()
+            c -= 1
+            # print(c)
+            # print(self.mean[c])
+            # print(self.mean)
+            x[start:stop] = np.random.normal(self.mean[c], self.variance[c], stop - start)
+            # print(start,stop)
+            # print(len(x))
+        return x
+
+    # Нарушение цепи маркова
+    def _abnormal_chain_violation(self, state, state_update, count_segment):
+        """
+            count_segemnt:int - количество сегментов одного состояния для замены
+        """
+        x = np.array(self.sequence)
+        states, pos = rle(self.stateseq)
+        positions = np.cumsum(pos)
+        index = np.where(np.array(states) == state)[0][-count_segment:]
+        for it, ind in enumerate(index):
+            if it == 0:
+                indexs = np.arange(positions[ind - 1], positions[ind])
+            else:
+                indexs = np.concatenate((indexs, np.arange(positions[ind - 1], positions[ind])))
+
+        x[indexs] = np.random.normal(self.mean[state_update], self.variance[state_update],
+                                     len(indexs))
+        return x
+
+    def _abnormal_increase_varience(self, states, coef):
+        assert len(states) < len(self.mean)
+        x = np.array(self.sequence)
+        for state in states:
+            indx = np.where(np.array(self.stateseq) == state)[0]
+            x[indx] = np.random.normal(self.mean[state], self.variance[state] * coef, len(indx))
+        return x
+
+    # Увеличение продолжительности состояния
+    def _abnormal_extend_condition(self, coef):
+        """
+            Возвращает сигнал, у которого увеличина продолжительность одного состояния
+            в coef раз.
+        """
+        start, stop, c = self.get_slice(self.sequence)
+        c = int(c)
+        x = self.sequence.copy()
+        size = int(self.dur_param[c] * coef)
+        if start+size >= self.T:
+            x[start:start + size] = np.random.normal(self.mean[c], self.variance[c], self.T - start)
+
+        else:
+            # print(start, stop, size)
+            x[start:start + size] = np.random.normal(self.mean[c], self.variance[c], size)
+            x[(start + size):] = self.sequence[:len(x) - (start + size)]
+            # x[(start + size):] = self.sequence[stop:stop+size]
+
+        x = np.array(x[:self.T])
+        if x.shape[0] > self.T:
+            print('Проверить длину массива')
+        else:
+            return x
 
 
 class Signal(Sequence):

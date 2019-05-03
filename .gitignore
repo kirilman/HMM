@@ -1,7 +1,9 @@
 A novel methodology based on hidden semi-Markov.pdf
-
+Khanna_IWCMC06.pdf
 /**/*.pdf
 /**/*.jpeg
 /**/*.docx
 /**/*.txt
 /**/*.png
+/venv
+/__pycache__
